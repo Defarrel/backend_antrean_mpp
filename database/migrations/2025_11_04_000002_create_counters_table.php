@@ -8,7 +8,8 @@ return new class extends Migration {
     public function up(): void {
         Schema::create('counters', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('counter_code')->unique(); 
+            $table->string('name'); 
             $table->text('description')->nullable();
             $table->integer('quota')->default(0);
             $table->time('schedule_start')->nullable();
