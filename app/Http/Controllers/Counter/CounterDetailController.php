@@ -10,45 +10,82 @@ class CounterDetailController extends Controller
 {
     public function index()
     {
-        return response()->json(CounterDetail::with('counter')->get());
+        $details = CounterDetail::with('counter')->orderBy('date', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Counter details retrieved successfully.',
+            'data' => $details
+        ], 200);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'counter_id' => 'required|exists:counters,id',
             'date' => 'required|date',
-            'waiting_count' => 'nullable|integer',
-            'called_count' => 'nullable|integer',
-            'served_count' => 'nullable|integer',
-            'canceled_count' => 'nullable|integer',
+            'total_queues' => 'integer|min:0',
+            'served' => 'integer|min:0',
+            'called' => 'integer|min:0',
+            'canceled' => 'integer|min:0',
+            'avg_duration' => 'numeric|min:0',
         ]);
 
-        $detail = CounterDetail::create($data);
-        return response()->json($detail, 201);
+        $detail = CounterDetail::create($validated);
+
+        return response()->json([
+            'message' => 'Counter detail created successfully.',
+            'data' => $detail
+        ], 201);
     }
 
-    public function show(CounterDetail $counterDetail)
+    public function show($id)
     {
-        return response()->json($counterDetail->load('counter'));
+        $detail = CounterDetail::with('counter')->find($id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Counter detail not found.'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Counter detail retrieved successfully.',
+            'data' => $detail
+        ], 200);
     }
 
-    public function update(Request $request, CounterDetail $counterDetail)
+    public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'waiting_count' => 'nullable|integer',
-            'called_count' => 'nullable|integer',
-            'served_count' => 'nullable|integer',
-            'canceled_count' => 'nullable|integer',
+        $detail = CounterDetail::find($id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Counter detail not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'total_queues' => 'integer|min:0',
+            'served' => 'integer|min:0',
+            'called' => 'integer|min:0',
+            'canceled' => 'integer|min:0',
+            'avg_duration' => 'numeric|min:0',
         ]);
 
-        $counterDetail->update($data);
-        return response()->json($counterDetail);
+        $detail->update($validated);
+
+        return response()->json([
+            'message' => 'Counter detail updated successfully.',
+            'data' => $detail
+        ], 200);
     }
 
-    public function destroy(CounterDetail $counterDetail)
+    public function destroy($id)
     {
-        $counterDetail->delete();
-        return response()->json(['message' => 'Counter detail deleted successfully']);
+        $detail = CounterDetail::find($id);
+
+        if (!$detail) {
+            return response()->json(['message' => 'Counter detail not found.'], 404);
+        }
+
+        $detail->delete();
+
+        return response()->json(['message' => 'Counter detail deleted successfully.'], 200);
     }
 }

@@ -10,53 +10,81 @@ class QueueController extends Controller
 {
     public function index()
     {
-        return response()->json(Queue::with('counter')->get());
+        $queues = Queue::with('counter')->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'message' => 'Queues retrieved successfully.',
+            'data' => $queues
+        ], 200);
     }
 
     public function store(Request $request)
     {
-        $data = $request->validate([
+        $validated = $request->validate([
             'queue_number' => 'required|string|unique:queues',
             'counter_id' => 'required|exists:counters,id',
-            'guest_name' => 'required|string',
+            'guest_name' => 'required|string|max:255',
+            'status' => 'in:waiting,called,served,canceled',
+            'called_at' => 'nullable|date',
+            'served_at' => 'nullable|date',
+            'canceled_at' => 'nullable|date',
         ]);
 
-        $queue = Queue::create($data);
-        return response()->json($queue, 201);
+        $queue = Queue::create($validated);
+
+        return response()->json([
+            'message' => 'Queue created successfully.',
+            'data' => $queue
+        ], 201);
     }
 
-    public function show(Queue $queue)
+    public function show($id)
     {
-        return response()->json($queue->load('counter'));
-    }
+        $queue = Queue::with('counter')->find($id);
 
-    public function update(Request $request, Queue $queue)
-    {
-        $data = $request->validate([
-            'status' => 'nullable|in:waiting,called,served,canceled',
-        ]);
-
-        if (isset($data['status'])) {
-            switch ($data['status']) {
-                case 'called':
-                    $data['called_at'] = now();
-                    break;
-                case 'served':
-                    $data['served_at'] = now();
-                    break;
-                case 'canceled':
-                    $data['canceled_at'] = now();
-                    break;
-            }
+        if (!$queue) {
+            return response()->json(['message' => 'Queue not found.'], 404);
         }
 
-        $queue->update($data);
-        return response()->json($queue);
+        return response()->json([
+            'message' => 'Queue retrieved successfully.',
+            'data' => $queue
+        ], 200);
     }
 
-    public function destroy(Queue $queue)
+    public function update(Request $request, $id)
     {
+        $queue = Queue::find($id);
+
+        if (!$queue) {
+            return response()->json(['message' => 'Queue not found.'], 404);
+        }
+
+        $validated = $request->validate([
+            'status' => 'in:waiting,called,served,canceled',
+            'called_at' => 'nullable|date',
+            'served_at' => 'nullable|date',
+            'canceled_at' => 'nullable|date',
+        ]);
+
+        $queue->update($validated);
+
+        return response()->json([
+            'message' => 'Queue updated successfully.',
+            'data' => $queue
+        ], 200);
+    }
+
+    public function destroy($id)
+    {
+        $queue = Queue::find($id);
+
+        if (!$queue) {
+            return response()->json(['message' => 'Queue not found.'], 404);
+        }
+
         $queue->delete();
-        return response()->json(['message' => 'Queue deleted successfully']);
+
+        return response()->json(['message' => 'Queue deleted successfully.'], 200);
     }
 }
