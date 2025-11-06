@@ -23,10 +23,19 @@ class Counter extends Model
     {
         return $this->hasMany(Queue::class);
     }
-    
+
     public function details()
     {
         return $this->hasMany(CounterDetail::class);
     }
 
+    public function admin()
+    {
+        return $this->hasOne(User::class);
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->whereNull('deleted_at');
+    }
 }

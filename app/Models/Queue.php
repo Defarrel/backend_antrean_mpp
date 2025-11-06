@@ -19,8 +19,19 @@ class Queue extends Model
         'canceled_at',
     ];
 
+    protected $casts = [
+        'called_at' => 'datetime',
+        'served_at' => 'datetime',
+        'canceled_at' => 'datetime',
+    ];
+
     public function counter()
     {
         return $this->belongsTo(Counter::class);
+    }
+
+    public function scopeWaiting($query)
+    {
+        return $query->where('status', 'waiting');
     }
 }

@@ -12,10 +12,11 @@ class CounterDetail extends Model
     protected $fillable = [
         'counter_id',
         'date',
-        'waiting_count',
-        'called_count',
-        'served_count',
-        'canceled_count',
+        'total_queues',
+        'served',
+        'called',
+        'canceled',
+        'avg_duration',
     ];
 
     public function counter()
