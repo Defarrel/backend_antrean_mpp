@@ -8,12 +8,29 @@ use Illuminate\Http\Request;
 
 class QueueController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $queues = Queue::with('counter')->orderBy('id', 'desc')->get();
+        $counterId = $request->query('counter_id');
+        $date = $request->query('date');
+
+        $query = Queue::with('counter')->orderBy('id', 'desc');
+
+        if ($counterId) {
+            $query->where('counter_id', $counterId);
+        }
+
+        if ($date) {
+            $query->whereDate('created_at', $date);
+        }
+
+        $queues = $query->get();
 
         return response()->json([
             'message' => 'Queues retrieved successfully.',
+            'filter' => [
+                'counter_id' => $counterId,
+                'date' => $date,
+            ],
             'data' => $queues
         ], 200);
     }
