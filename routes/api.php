@@ -15,4 +15,8 @@ Route::prefix('v1')->group(function () {
     // Statistik per counter atau seluruh counter
     Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
     Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
+
+    // Antian Otomatis  
+    Route::post('queues/call-next', [QueueController::class, 'callNext']);
+
 });

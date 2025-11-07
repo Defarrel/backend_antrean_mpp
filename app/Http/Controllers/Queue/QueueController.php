@@ -39,24 +39,44 @@ class QueueController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'queue_number' => 'required|string|unique:queues',
             'counter_id' => 'required|exists:counters,id',
             'guest_name' => 'required|string|max:255',
-            'status' => 'in:waiting,called,served,canceled',
-            'called_at' => 'nullable|date',
-            'served_at' => 'nullable|date',
-            'canceled_at' => 'nullable|date',
         ]);
 
-        $queue = Queue::create($validated);
+        $counter = \App\Models\Counter::findOrFail($validated['counter_id']);
+        $code = strtoupper($counter->counter_code); // Contoh: B-0001
 
-        event(new QueueUpdated($queue));
+        $lastQueue = \App\Models\Queue::where('counter_id', $counter->id)
+            ->whereDate('created_at', now()->toDateString())
+            ->orderByDesc('id')
+            ->first();
+
+        $nextNumber = 1;
+
+        if ($lastQueue) {
+            $parts = explode('-', $lastQueue->queue_number);
+            $lastNum = (int) end($parts);
+            $nextNumber = $lastNum + 1;
+        }
+
+        $queueNumber = sprintf('%s-%03d', $code, $nextNumber);
+
+        $queue = \App\Models\Queue::create([
+            'queue_number' => $queueNumber,
+            'counter_id' => $counter->id,
+            'guest_name' => $validated['guest_name'],
+            'status' => 'waiting',
+        ]);
+
+        event(new \App\Events\QueueUpdated($queue));
 
         return response()->json([
             'message' => 'Queue created successfully.',
             'data' => $queue,
         ], 201);
     }
+
+
 
     public function show($id)
     {
@@ -111,4 +131,33 @@ class QueueController extends Controller
 
         return response()->json(['message' => 'Queue deleted successfully.'], 200);
     }
+    
+    public function callNext(Request $request)
+    {
+        $validated = $request->validate([
+            'counter_id' => 'required|exists:counters,id',
+        ]);
+
+        $queue = Queue::where('counter_id', $validated['counter_id'])
+            ->where('status', 'waiting')
+            ->orderBy('id')
+            ->first();
+
+        if (!$queue) {
+            return response()->json(['message' => 'No waiting queue found.'], 404);
+        }
+
+        $queue->update([
+            'status' => 'called',
+            'called_at' => now(),
+        ]);
+
+        event(new \App\Events\QueueUpdated($queue));
+
+        return response()->json([
+            'message' => 'Queue called successfully.',
+            'data' => $queue,
+        ], 200);
+    }
+
 }
