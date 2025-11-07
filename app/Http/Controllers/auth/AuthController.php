@@ -11,9 +11,7 @@ use Illuminate\Support\Facades\Auth;
 
 class AuthController extends Controller
 {
-    /**
-     * REGISTER - Hanya untuk Customer Service
-     */
+
     public function register(Request $request)
     {
         $validated = $request->validate([
@@ -22,7 +20,6 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        // Pastikan role customer_service ada di tabel roles
         $role = Role::where('name', 'customer_service')->first();
 
         if (!$role) {
@@ -31,7 +28,6 @@ class AuthController extends Controller
             ], 400);
         }
 
-        // Buat user baru dengan role customer_service
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
@@ -49,9 +45,6 @@ class AuthController extends Controller
         ], 201);
     }
 
-    /**
-     * LOGIN - Hanya untuk Customer Service
-     */
     public function login(Request $request)
     {
         $credentials = $request->validate([
@@ -65,7 +58,6 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        // Cegah user non-CS login
         if ($user->role && $user->role->name !== 'customer_service') {
             return response()->json([
                 'message' => 'Access denied. Only Customer Service can login.'
@@ -82,17 +74,11 @@ class AuthController extends Controller
         ]);
     }
 
-    /**
-     * PROFILE
-     */
     public function me()
     {
         return response()->json(Auth::user());
     }
 
-    /**
-     * LOGOUT
-     */
     public function logout(Request $request)
     {
         $request->user()->token()->revoke();
