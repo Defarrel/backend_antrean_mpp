@@ -11,8 +11,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->register(\App\Providers\BroadcastServiceProvider::class);
     }
+
 
     /**
      * Bootstrap any application services.
@@ -21,4 +22,5 @@ class AppServiceProvider extends ServiceProvider
     {
         //
     }
+    
 }

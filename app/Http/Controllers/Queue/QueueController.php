@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
 use App\Models\Queue;
+use App\Events\QueueUpdated;
 use Illuminate\Http\Request;
 
 class QueueController extends Controller
@@ -27,11 +28,11 @@ class QueueController extends Controller
 
         return response()->json([
             'message' => 'Queues retrieved successfully.',
-            'filter' => [
+            'filters' => [
                 'counter_id' => $counterId,
                 'date' => $date,
             ],
-            'data' => $queues
+            'data' => $queues,
         ], 200);
     }
 
@@ -49,9 +50,11 @@ class QueueController extends Controller
 
         $queue = Queue::create($validated);
 
+        event(new QueueUpdated($queue));
+
         return response()->json([
             'message' => 'Queue created successfully.',
-            'data' => $queue
+            'data' => $queue,
         ], 201);
     }
 
@@ -65,7 +68,7 @@ class QueueController extends Controller
 
         return response()->json([
             'message' => 'Queue retrieved successfully.',
-            'data' => $queue
+            'data' => $queue,
         ], 200);
     }
 
@@ -86,9 +89,11 @@ class QueueController extends Controller
 
         $queue->update($validated);
 
+        event(new QueueUpdated($queue));
+
         return response()->json([
             'message' => 'Queue updated successfully.',
-            'data' => $queue
+            'data' => $queue,
         ], 200);
     }
 
@@ -101,6 +106,8 @@ class QueueController extends Controller
         }
 
         $queue->delete();
+
+        event(new QueueUpdated(['deleted_id' => $id]));
 
         return response()->json(['message' => 'Queue deleted successfully.'], 200);
     }
