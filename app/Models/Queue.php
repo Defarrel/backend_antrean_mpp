@@ -9,21 +9,24 @@ class Queue extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'queue_number',
-        'counter_id',
-        'guest_name',
-        'status',
-        'called_at',
-        'served_at',
-        'canceled_at',
-    ];
+protected $fillable = [
+    'queue_number',
+    'counter_id',
+    'guest_name',
+    'status',
+    'called_at',
+    'served_at',
+    'canceled_at',
+    'done_at',
+];
 
-    protected $casts = [
-        'called_at' => 'datetime',
-        'served_at' => 'datetime',
-        'canceled_at' => 'datetime',
-    ];
+protected $casts = [
+    'called_at' => 'datetime',
+    'served_at' => 'datetime',
+    'canceled_at' => 'datetime',
+    'done_at' => 'datetime',
+];
+
 
     public function counter()
     {

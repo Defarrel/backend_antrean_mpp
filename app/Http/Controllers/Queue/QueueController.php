@@ -3,7 +3,8 @@
 namespace App\Http\Controllers\Queue;
 
 use App\Http\Controllers\Controller;
-use App\Models\Queue;
+use App\Models\Queue as QueueModel;
+use App\Models\QueueLog as QueueLogModel;
 use App\Events\QueueUpdated;
 use Illuminate\Http\Request;
 
@@ -14,7 +15,7 @@ class QueueController extends Controller
         $counterId = $request->query('counter_id');
         $date = $request->query('date');
 
-        $query = Queue::with('counter')->orderBy('id', 'desc');
+        $query = QueueModel::with('counter')->orderBy('id', 'desc');
 
         if ($counterId) {
             $query->where('counter_id', $counterId);
@@ -44,7 +45,7 @@ class QueueController extends Controller
         ]);
 
         $counter = \App\Models\Counter::findOrFail($validated['counter_id']);
-        $code = strtoupper($counter->counter_code); // Contoh: B-0001
+        $code = strtoupper($counter->counter_code);
 
         $lastQueue = \App\Models\Queue::where('counter_id', $counter->id)
             ->whereDate('created_at', now()->toDateString())
@@ -52,11 +53,10 @@ class QueueController extends Controller
             ->first();
 
         $nextNumber = 1;
-
         if ($lastQueue) {
             $parts = explode('-', $lastQueue->queue_number);
-            $lastNum = (int) end($parts);
-            $nextNumber = $lastNum + 1;
+            $lastNumber = is_numeric(end($parts)) ? (int) end($parts) : 0;
+            $nextNumber = $lastNumber + 1;
         }
 
         $queueNumber = sprintf('%s-%03d', $code, $nextNumber);
@@ -68,96 +68,103 @@ class QueueController extends Controller
             'status' => 'waiting',
         ]);
 
-        event(new \App\Events\QueueUpdated($queue));
-
         return response()->json([
             'message' => 'Queue created successfully.',
             'data' => $queue,
         ], 201);
     }
 
-
-
-    public function show($id)
+    public function call($id)
     {
-        $queue = Queue::with('counter')->find($id);
-
-        if (!$queue) {
-            return response()->json(['message' => 'Queue not found.'], 404);
-        }
-
-        return response()->json([
-            'message' => 'Queue retrieved successfully.',
-            'data' => $queue,
-        ], 200);
+        return $this->updateQueueStatus($id, 'called', 'called_at');
     }
 
-    public function update(Request $request, $id)
+    public function serve($id)
     {
-        $queue = Queue::find($id);
+        return $this->updateQueueStatus($id, 'served', 'served_at');
+    }
 
-        if (!$queue) {
-            return response()->json(['message' => 'Queue not found.'], 404);
+    public function done($id)
+    {
+        $response = $this->updateQueueStatus($id, 'done', 'done_at');
+
+        $queue = QueueModel::find($id);
+        if ($queue) {
+            $this->callNext($queue->counter_id);
         }
 
-        $validated = $request->validate([
-            'status' => 'in:waiting,called,served,canceled',
-            'called_at' => 'nullable|date',
-            'served_at' => 'nullable|date',
-            'canceled_at' => 'nullable|date',
-        ]);
+        return $response;
+    }
 
-        $queue->update($validated);
-
-        event(new QueueUpdated($queue));
-
-        return response()->json([
-            'message' => 'Queue updated successfully.',
-            'data' => $queue,
-        ], 200);
+    public function cancel($id)
+    {
+        return $this->updateQueueStatus($id, 'canceled', 'canceled_at');
     }
 
     public function destroy($id)
     {
-        $queue = Queue::find($id);
-
+        $queue = QueueModel::find($id);
         if (!$queue) {
             return response()->json(['message' => 'Queue not found.'], 404);
         }
 
         $queue->delete();
-
-        event(new QueueUpdated(['deleted_id' => $id]));
+        event(new QueueUpdated((object)['deleted_id' => $id]));
 
         return response()->json(['message' => 'Queue deleted successfully.'], 200);
     }
-    
-    public function callNext(Request $request)
+
+    private function logQueueStatus(QueueModel $queue, string $status)
     {
-        $validated = $request->validate([
-            'counter_id' => 'required|exists:counters,id',
+        QueueLogModel::create([
+            'queue_id' => $queue->id,
+            'counter_id' => $queue->counter_id,
+            'status' => $status,
+            'status_time' => now(),
         ]);
+    }
 
-        $queue = Queue::where('counter_id', $validated['counter_id'])
-            ->where('status', 'waiting')
-            ->orderBy('id')
-            ->first();
-
+    private function updateQueueStatus($id, $status, $timestampColumn)
+    {
+        $queue = QueueModel::find($id);
         if (!$queue) {
-            return response()->json(['message' => 'No waiting queue found.'], 404);
+            return response()->json(['message' => 'Queue not found.'], 404);
+        }
+
+        $fillableTimestamps = ['called_at', 'served_at', 'done_at', 'canceled_at'];
+        if (!in_array($timestampColumn, $fillableTimestamps)) {
+            return response()->json(['message' => 'Invalid timestamp column.'], 400);
         }
 
         $queue->update([
-            'status' => 'called',
-            'called_at' => now(),
+            'status' => $status,
+            $timestampColumn => now(),
         ]);
 
-        event(new \App\Events\QueueUpdated($queue));
+        $this->logQueueStatus($queue, $status);
+        event(new QueueUpdated($queue));
 
         return response()->json([
-            'message' => 'Queue called successfully.',
+            'message' => "Queue status updated to {$status}.",
             'data' => $queue,
         ], 200);
     }
 
+    private function callNext($counterId)
+    {
+        $nextQueue = QueueModel::where('counter_id', $counterId)
+            ->where('status', 'waiting')
+            ->orderBy('id')
+            ->first();
+
+        if ($nextQueue) {
+            $nextQueue->update([
+                'status' => 'called',
+                'called_at' => now(),
+            ]);
+
+            $this->logQueueStatus($nextQueue, 'called');
+            event(new QueueUpdated($nextQueue));
+        }
+    }
 }

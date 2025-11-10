@@ -2,39 +2,45 @@
 
 namespace App\Events;
 
+use App\Models\Queue;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
-use Illuminate\Foundation\Events\Dispatchable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Queue\SerializesModels;
 
-class QueueUpdated implements ShouldBroadcast
+class QueueUpdated implements ShouldBroadcastNow
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use InteractsWithSockets, SerializesModels;
 
-    public $queue;
+    public array $payload;
 
     /**
      * Create a new event instance.
      */
     public function __construct($queue)
     {
-        $this->queue = $queue;
+        if ($queue instanceof Queue) {
+            $this->payload = [
+                'id' => $queue->id,
+                'queue_number' => $queue->queue_number,
+                'status' => $queue->status,
+                'counter_id' => $queue->counter_id,
+                'updated_at' => $queue->updated_at,
+            ];
+        } elseif (is_object($queue) && isset($queue->deleted_id)) {
+            $this->payload = [
+                'deleted_id' => $queue->deleted_id,
+            ];
+        } else {
+            $this->payload = (array) $queue;
+        }
     }
 
-    /**
-     * Tentukan channel broadcast.
-     */
     public function broadcastOn()
     {
-        return new Channel('queue-updates');
+        return new Channel('queues');
     }
 
-    /**
-     * Tentukan event name yang dikirim ke frontend.
-     */
     public function broadcastAs()
     {
         return 'QueueUpdated';
