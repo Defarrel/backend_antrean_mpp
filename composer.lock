@@ -4,11 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-<<<<<<< HEAD
     "content-hash": "cacc2e89a9dbccf593f6c45f46a45d18",
-=======
-    "content-hash": "2ad5ff0a1cbf045dba5d9f27a622399d",
->>>>>>> Laravel_passport
     "packages": [
         {
             "name": "brick/math",
