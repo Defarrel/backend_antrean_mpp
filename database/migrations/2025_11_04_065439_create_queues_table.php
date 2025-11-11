@@ -10,6 +10,7 @@ return new class extends Migration {
             $table->id();
             $table->string('queue_number')->unique();
             $table->foreignId('counter_id')->constrained('counters')->cascadeOnDelete();
+            $table->string('guest_name');
             $table->enum('status', ['waiting', 'called', 'served', 'done', 'canceled'])->default('waiting');
             $table->timestamp('called_at')->nullable();
             $table->timestamp('served_at')->nullable();

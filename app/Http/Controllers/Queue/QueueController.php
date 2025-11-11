@@ -41,6 +41,7 @@ class QueueController extends Controller
     {
         $validated = $request->validate([
             'counter_id' => 'required|exists:counters,id',
+            'guest_name' => 'required|string|max:255',
         ]);
 
         $counter = \App\Models\Counter::findOrFail($validated['counter_id']);
@@ -63,6 +64,7 @@ class QueueController extends Controller
         $queue = \App\Models\Queue::create([
             'queue_number' => $queueNumber,
             'counter_id' => $counter->id,
+            'guest_name' => $validated['guest_name'],
             'status' => 'waiting',
         ]);
 
