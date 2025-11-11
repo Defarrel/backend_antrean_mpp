@@ -20,7 +20,7 @@ class AuthController extends Controller
             'password' => 'required|string|min:6',
         ]);
 
-        $role = Role::where('name', 'customer_service')->first();
+        $role = Role::where('name', 'customer_service')->firstOrFail();
 
         if (!$role) {
             return response()->json([
@@ -67,12 +67,32 @@ class AuthController extends Controller
         $token = $user->createToken('CustomerServiceToken')->accessToken;
 
         return response()->json([
-            'message' => 'Login successful (Customer Service)',
+            'message' => 'Login successfully',
             'token_type' => 'Bearer',
             'access_token' => $token,
             'user' => $user,
         ]);
     }
+
+    public function guestLogin()
+    {
+        $guest = \App\Models\User::create([
+            'name' => 'Guest',
+            'email' => 'guest_' . uniqid() . '@example.com',
+            'password' => Hash::make('guest'),
+            'role_id' => \App\Models\Role::where('name', 'guest')->first()->id,
+        ]);
+
+        $token = $guest->createToken('GuestToken')->accessToken;
+
+        return response()->json([
+            'message' => 'Guest session started',
+            'token_type' => 'Bearer',
+            'access_token' => $token,
+            'user' => $guest,
+        ]);
+    }
+
 
     public function me()
     {

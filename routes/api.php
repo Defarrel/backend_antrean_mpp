@@ -14,13 +14,16 @@ Route::prefix('v1')->group(function () {
     Route::apiResource('queues', QueueController::class);
 
     // Auth routes (public)
-    Route::post('register', [AuthController::class, 'register']);
-    Route::post('login', [AuthController::class, 'login']);
+    Route::prefix('auth')->group(function () {
+        Route::post('/register', [AuthController::class, 'register']);
+        Route::post('/login', [AuthController::class, 'login']);
+        Route::post('/guest-login', [AuthController::class, 'guestLogin']);
+    });
 
     // Protected routes (auth:api)
-    Route::middleware('auth:api')->group(function () {
-        Route::get('me', [AuthController::class, 'me']);
-        Route::post('logout', [AuthController::class, 'logout']);
+    Route::middleware('auth:api')->prefix('auth')->group(function () {
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::post('/logout', [AuthController::class, 'logout']);
     });
 
     // Statistik per counter atau seluruh counter
