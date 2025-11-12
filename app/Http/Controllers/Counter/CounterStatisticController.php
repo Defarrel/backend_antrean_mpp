@@ -11,7 +11,6 @@ use Illuminate\Support\Facades\DB;
 class CounterStatisticController extends Controller
 {
 
-     // Ambil statistik antrean per loket
     public function index(Request $request)
     {
         $date = $request->query('date'); 
@@ -51,7 +50,6 @@ class CounterStatisticController extends Controller
         ], 200);
     }
 
-    // Ambil statistik per loket id
     public function show(Request $request, $id)
     {
         $date = $request->query('date');
