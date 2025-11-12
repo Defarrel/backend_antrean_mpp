@@ -21,7 +21,8 @@ class CounterStatisticController extends Controller
                 DB::raw("SUM(CASE WHEN status = 'served' THEN 1 ELSE 0 END) as served"),
                 DB::raw("SUM(CASE WHEN status = 'called' THEN 1 ELSE 0 END) as called"),
                 DB::raw("SUM(CASE WHEN status = 'canceled' THEN 1 ELSE 0 END) as canceled"),
-                DB::raw("AVG(EXTRACT(EPOCH FROM (served_at - called_at))) as avg_duration_seconds")
+                DB::raw("AVG(EXTRACT(EPOCH FROM (COALESCE(served_at, now()) - COALESCE(called_at, now())))) as avg_duration_seconds")
+
             )
             ->groupBy('counter_id');
 

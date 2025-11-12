@@ -27,6 +27,7 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::apiResource('counter-details', CounterDetailController::class);
     Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
     Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
+    Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
 });
 
 // Customer Service routes
@@ -37,7 +38,6 @@ Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
     Route::patch('queues/{id}/done', [QueueController::class, 'done']);
     Route::patch('queues/{id}/cancel', [QueueController::class, 'cancel']);
     Route::post('queues/call-next', [QueueController::class, 'callNext']);
-    Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
 });
 
 // guest routes

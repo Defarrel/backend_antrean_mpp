@@ -148,21 +148,33 @@ class QueueController extends Controller
         ], 200);
     }
 
-    private function callNext($counterId)
+    public function callNext(Request $request)
     {
+        $counterId = $request->input('counter_id');
+        if (!$counterId) {
+            return response()->json(['message' => 'counter_id is required'], 400);
+        }
+
         $nextQueue = QueueModel::where('counter_id', $counterId)
             ->where('status', 'waiting')
             ->orderBy('id')
             ->first();
 
-        if ($nextQueue) {
-            $nextQueue->update([
-                'status' => 'called',
-                'called_at' => now(),
-            ]);
-
-            $this->logQueueStatus($nextQueue, 'called');
-            event(new QueueUpdated($nextQueue));
+        if (!$nextQueue) {
+            return response()->json(['message' => 'No waiting queue found.'], 404);
         }
+
+        $nextQueue->update([
+            'status' => 'called',
+            'called_at' => now(),
+        ]);
+
+        $this->logQueueStatus($nextQueue, 'called');
+        event(new QueueUpdated($nextQueue));
+
+        return response()->json([
+            'message' => 'Next queue called successfully.',
+            'data' => $nextQueue,
+        ], 200);
     }
 }
