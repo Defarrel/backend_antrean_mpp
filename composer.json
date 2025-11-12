@@ -8,11 +8,7 @@
     "require": {
         "php": "^8.2",
         "laravel/framework": "^12.0",
-<<<<<<< HEAD
-        "laravel/passport": "13.4",
-=======
         "laravel/passport": "^13.4",
->>>>>>> 6f032b11c1d9fca6a8d00b34a1cb77842ef9fb8d
         "laravel/tinker": "^2.10.1",
         "predis/predis": "^3.2",
         "spatie/laravel-permission": "^6.23"
