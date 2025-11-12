@@ -18,7 +18,6 @@ return new class extends Migration
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
 
-            // Tambahan untuk sistem antrean MPP
             $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
             $table->foreignId('counter_id')->nullable()->constrained('counters')->nullOnDelete();
 

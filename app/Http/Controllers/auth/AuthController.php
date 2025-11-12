@@ -58,13 +58,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if ($user->role && $user->role->name !== 'customer_service') {
+        if ($user->role && !in_array($user->role->name, ['customer_service', 'admin'])) {
             return response()->json([
-                'message' => 'Access denied. Only Customer Service can login.'
+                'message' => 'Access denied. Only Customer Service or Admin can login.'
             ], 403);
         }
 
         $token = $user->createToken('CustomerServiceToken')->accessToken;
+
 
         return response()->json([
             'message' => 'Login successfully',

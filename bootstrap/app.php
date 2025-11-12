@@ -3,19 +3,33 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Middleware\HandleCors;
+use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
+use Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 
 return Application::configure(basePath: dirname(__DIR__))
-->withRouting(
-    web: __DIR__ . '/../routes/web.php',
-    api: __DIR__ . '/../routes/api.php',
-    commands: __DIR__ . '/../routes/console.php',
-    health: '/up',
-)
+    ->withRouting(
+        web: __DIR__ . '/../routes/web.php',
+        api: __DIR__ . '/../routes/api.php',
+        commands: __DIR__ . '/../routes/console.php',
+        health: '/up',
+        apiPrefix: 'api'
+    )
     ->withMiddleware(function (Middleware $middleware): void {
+
+        $middleware->group('api', [
+            HandleCors::class, 
+            ValidatePostSize::class,
+            ConvertEmptyStringsToNull::class,
+            SubstituteBindings::class,
+        ]);
+
         $middleware->alias([
             'role' => \App\Http\Middleware\RoleMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->create();
