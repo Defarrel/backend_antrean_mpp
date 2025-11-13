@@ -67,6 +67,7 @@ class QueueController extends Controller
             'status' => 'waiting',
         ]);
 
+        $this->logQueueStatus($queue, 'waiting');
         return response()->json([
             'message' => 'Queue created successfully.',
             'data' => $queue,
@@ -116,24 +117,24 @@ class QueueController extends Controller
 
     private function logQueueStatus(QueueModel $queue, string $status)
     {
+        $statusTime = $status === 'waiting'
+            ? $queue->created_at
+            : now();
+
         QueueLogModel::create([
             'queue_id' => $queue->id,
             'counter_id' => $queue->counter_id,
             'status' => $status,
-            'status_time' => now(),
+            'status_time' => $statusTime,
         ]);
     }
+
 
     private function updateQueueStatus($id, $status, $timestampColumn)
     {
         $queue = QueueModel::find($id);
         if (!$queue) {
             return response()->json(['message' => 'Queue not found.'], 404);
-        }
-
-        $fillableTimestamps = ['called_at', 'served_at', 'done_at', 'canceled_at'];
-        if (!in_array($timestampColumn, $fillableTimestamps)) {
-            return response()->json(['message' => 'Invalid timestamp column.'], 400);
         }
 
         $queue->update([
@@ -150,6 +151,25 @@ class QueueController extends Controller
         ], 200);
     }
 
+    private function callNextInternal($counterId)
+    {
+        $nextQueue = QueueModel::where('counter_id', $counterId)
+            ->where('status', 'waiting')
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('id')
+            ->first();
+
+        if ($nextQueue) {
+            $nextQueue->update([
+                'status' => 'called',
+                'called_at' => now(),
+            ]);
+
+            $this->logQueueStatus($nextQueue, 'called');
+            event(new QueueUpdated($nextQueue));
+        }
+    }
+
     public function callNext(Request $request)
     {
         $counterId = $request->input('counter_id');
@@ -159,6 +179,7 @@ class QueueController extends Controller
 
         $nextQueue = QueueModel::where('counter_id', $counterId)
             ->where('status', 'waiting')
+            ->whereDate('created_at', now()->toDateString())
             ->orderBy('id')
             ->first();
 
@@ -177,6 +198,29 @@ class QueueController extends Controller
         return response()->json([
             'message' => 'Next queue called successfully.',
             'data' => $nextQueue,
+        ], 200);
+    }
+    public function waitingList(Request $request)
+    {
+        $counterId = $request->query('counter_id');
+
+        $query = QueueModel::with('counter')
+            ->where('status', 'waiting')
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('id');
+
+        if ($counterId) {
+            $query->where('counter_id', $counterId);
+        }
+
+        $waiting = $query->get();
+
+        return response()->json([
+            'message' => 'Waiting queues retrieved successfully.',
+            'filters' => [
+                'counter_id' => $counterId,
+            ],
+            'data' => $waiting,
         ], 200);
     }
 }

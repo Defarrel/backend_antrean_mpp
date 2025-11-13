@@ -24,6 +24,7 @@ Route::middleware('auth:api')->controller(AuthController::class)->prefix('auth')
 // Admin routes
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::apiResource('counters', CounterController::class);
+    Route::get('queues/waiting', [QueueController::class, 'waitingList']);
     Route::apiResource('counter-details', CounterDetailController::class);
     Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
     Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
@@ -32,6 +33,7 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
 // Customer Service routes
 Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
+    Route::apiResource('counters', CounterController::class);
     Route::patch('queues/{id}/call', [QueueController::class, 'call']);
     Route::patch('queues/{id}/serve', [QueueController::class, 'serve']);
     Route::patch('queues/{id}/done', [QueueController::class, 'done']);

@@ -10,7 +10,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('queue_id')->constrained('queues')->cascadeOnDelete();
             $table->foreignId('counter_id')->constrained('counters')->cascadeOnDelete();
-            $table->enum('status', ['start', 'called', 'served', 'done', 'canceled']);
+            $table->enum('status', ['waiting', 'called', 'served', 'done', 'canceled']);
             $table->timestamp('status_time')->useCurrent();
             $table->timestamps();
         });

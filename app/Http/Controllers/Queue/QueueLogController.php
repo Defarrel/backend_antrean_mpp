@@ -48,6 +48,7 @@ class QueueLogController extends Controller
                 'duration' => $duration,
             ];
         }
+        
 
         return response()->json([
             'message' => 'Queue logs for counter retrieved successfully.',
