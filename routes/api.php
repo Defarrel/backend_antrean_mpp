@@ -32,7 +32,6 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
 // Customer Service routes
 Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
-    Route::apiResource('queues', QueueController::class);
     Route::patch('queues/{id}/call', [QueueController::class, 'call']);
     Route::patch('queues/{id}/serve', [QueueController::class, 'serve']);
     Route::patch('queues/{id}/done', [QueueController::class, 'done']);
@@ -43,7 +42,7 @@ Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
 // guest routes
 Route::prefix('guest')->group(function () {
     Route::get('counters', [CounterController::class, 'index']);
-    Route::post('queues', [QueueController::class, 'store']);
+    Route::apiResource('queues', QueueController::class);
     Route::get('counters/{id}', [CounterController::class, 'show']);
     Route::get('queues', [QueueController::class, 'index']);
 });
