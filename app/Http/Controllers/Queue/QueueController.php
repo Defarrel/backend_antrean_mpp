@@ -58,7 +58,8 @@ class QueueController extends Controller
             $nextNumber = $lastNumber + 1;
         }
 
-        $queueNumber = sprintf('%s-%03d', $code, $nextNumber);
+        $today = now()->format('Ymd');
+        $queueNumber = sprintf('%s-%s-%03d', $code, $today, $nextNumber);
 
         $queue = \App\Models\Queue::create([
             'queue_number' => $queueNumber,
@@ -71,6 +72,7 @@ class QueueController extends Controller
             'data' => $queue,
         ], 201);
     }
+
 
     public function call($id)
     {
@@ -107,7 +109,7 @@ class QueueController extends Controller
         }
 
         $queue->delete();
-        event(new QueueUpdated((object)['deleted_id' => $id]));
+        event(new QueueUpdated((object) ['deleted_id' => $id]));
 
         return response()->json(['message' => 'Queue deleted successfully.'], 200);
     }
