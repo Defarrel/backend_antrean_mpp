@@ -43,6 +43,7 @@ Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
 // guest routes
 Route::prefix('guest')->group(function () {
     Route::get('counters', [CounterController::class, 'index']);
+    Route::post('queues', [QueueController::class, 'store']);
     Route::get('counters/{id}', [CounterController::class, 'show']);
     Route::get('queues', [QueueController::class, 'index']);
 });
