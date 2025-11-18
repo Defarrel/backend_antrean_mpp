@@ -30,6 +30,9 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
     Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
     Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
+    Route::get('/trashed', [CounterController::class, 'trashed']);          
+    Route::post('/restore/{id}', [CounterController::class, 'restore']);    
+    Route::delete('/force/{id}', [CounterController::class, 'forceDelete']); 
 });
 
 // Customer Service routes

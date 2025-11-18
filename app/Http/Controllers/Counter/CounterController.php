@@ -87,4 +87,46 @@ class CounterController extends Controller
 
         return response()->json(['message' => 'Counter deleted successfully.'], 200);
     }
+
+    public function trashed()
+    {
+        $counters = Counter::onlyTrashed()->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'message' => 'List of soft-deleted counters retrieved successfully.',
+            'data' => $counters
+        ], 200);
+    }
+
+    public function restore($id)
+    {
+        $counter = Counter::onlyTrashed()->where('id', $id)->first();
+
+        if (!$counter) {
+            return response()->json(['message' => 'Counter not found or not deleted.'], 404);
+        }
+
+        $counter->restore();
+
+        return response()->json([
+            'message' => 'Counter restored successfully.',
+            'data' => $counter
+        ], 200);
+    }
+
+    public function forceDelete($id)
+    {
+        $counter = Counter::onlyTrashed()->where('id', $id)->first();
+
+        if (!$counter) {
+            return response()->json(['message' => 'Counter not found or not deleted.'], 404);
+        }
+
+        $counter->forceDelete();
+
+        return response()->json([
+            'message' => 'Counter permanently deleted successfully.'
+        ], 200);
+    }
+
 }
