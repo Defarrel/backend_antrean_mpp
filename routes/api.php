@@ -23,6 +23,9 @@ Route::middleware('auth:api')->controller(AuthController::class)->prefix('auth')
 
 // Admin routes
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
+    Route::get('counters/trashed', [CounterController::class, 'trashed']);
+    Route::post('counters/restore/{id}', [CounterController::class, 'restore']);
+    Route::delete('counters/force/{id}', [CounterController::class, 'forceDelete']);
     Route::apiResource('counters', CounterController::class);
     Route::apiResource('queues', QueueController::class);
     Route::get('queues/waiting', [QueueController::class, 'waitingList']);
@@ -30,9 +33,6 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
     Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
     Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
-    Route::get('counters/trashed', [CounterController::class, 'trashed']);          
-    Route::post('counters/restore/{id}', [CounterController::class, 'restore']);    
-    Route::delete('counters/force/{id}', [CounterController::class, 'forceDelete']); 
 });
 
 // Customer Service routes
