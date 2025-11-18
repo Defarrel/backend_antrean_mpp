@@ -19,6 +19,8 @@ class Counter extends Model
         'schedule_end',
     ];
 
+    protected $dates = ['deleted_at'];
+
     public function queues()
     {
         return $this->hasMany(Queue::class);
