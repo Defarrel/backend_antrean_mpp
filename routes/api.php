@@ -8,48 +8,85 @@ use App\Http\Controllers\Counter\CounterStatisticController;
 use App\Http\Controllers\Queue\QueueController;
 use App\Http\Controllers\Queue\QueueLogController;
 
-// auth routes (public)
+// Auth public
 Route::controller(AuthController::class)->prefix('auth')->group(function () {
     Route::post('register', 'register');
     Route::post('login', 'login');
     Route::post('guest-login', 'guestLogin');
 });
 
-// Auth routes (protected)
+// Auth Protected
 Route::middleware('auth:api')->controller(AuthController::class)->prefix('auth')->group(function () {
     Route::get('me', 'me');
     Route::post('logout', 'logout');
 });
 
-// Admin routes
+// Mix: ADMIN + CUSTOMER SERVICE
+Route::middleware(['auth:api', 'role:admin|customer_service'])
+    ->group(function () {
+
+        // UPDATE counter
+        Route::put('counters/{id}', [CounterController::class, 'update']);
+
+        // CREATE queue
+        Route::post('queues', [QueueController::class, 'store']);
+    });
+
+// Mix: ADMIN + CUSTOMER SERVICE
+Route::middleware(['auth:api', 'role:admin|customer_service'])
+    ->group(function () {
+        Route::get('counters', [CounterController::class, 'index']);
+    });
+
+
+// ADMIN
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
+
+    // Counter extras
     Route::get('counters/trashed', [CounterController::class, 'trashed']);
     Route::post('counters/restore/{id}', [CounterController::class, 'restore']);
     Route::delete('counters/force/{id}', [CounterController::class, 'forceDelete']);
-    Route::apiResource('counters', CounterController::class);
-    Route::apiResource('queues', QueueController::class);
-    Route::get('queues/waiting', [QueueController::class, 'waitingList']);
-    Route::apiResource('counter-details', CounterDetailController::class);
-    Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
-    Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
+
+    // Counter CRUD manual
+    Route::post('counters', [CounterController::class, 'store']);
+    Route::delete('counters/{id}', [CounterController::class, 'destroy']);
+
+    // Counter details
+    Route::get('counters/{id}', [CounterController::class, 'show']);
     Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
+    Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
+    Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
+
+    // Queue admin CRUD 
+    Route::get('queues', [QueueController::class, 'index']);
+    Route::get('queues/{id}', [QueueController::class, 'index']);
+    Route::delete('queues/{id}', [QueueController::class, 'destroy']);
+
+    // Counter details CRUD
+    Route::get('counter-details', [CounterDetailController::class, 'index']);
+    Route::post('counter-details', [CounterDetailController::class, 'store']);
+    Route::put('counter-details/{id}', [CounterDetailController::class, 'update']);
+    Route::delete('counter-details/{id}', [CounterDetailController::class, 'destroy']);
 });
 
-// Customer Service routes
+// CS
 Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
+
     Route::get('counters', [CounterController::class, 'index']);
     Route::put('counters/{id}', [CounterController::class, 'update']);
-    Route::patch('queues/{id}/call', [QueueController::class, 'call']);
-    Route::patch('queues/{id}/serve', [QueueController::class, 'serve']);
-    Route::patch('queues/{id}/done', [QueueController::class, 'done']);
+
+    Route::patch('queues/{id}/call',   [QueueController::class, 'call']);
+    Route::patch('queues/{id}/serve',  [QueueController::class, 'serve']);
+    Route::patch('queues/{id}/done',   [QueueController::class, 'done']);
     Route::patch('queues/{id}/cancel', [QueueController::class, 'cancel']);
+
     Route::post('queues/{counterId}/call-next', [QueueController::class, 'callNext']);
 });
 
-// guest routes
+// GUEST
 Route::prefix('guest')->group(function () {
-    Route::get('counters', [CounterController::class, 'index']);
     Route::post('queues', [QueueController::class, 'store']);
+    Route::get('counters', [CounterController::class, 'index']);
     Route::get('counters/{id}', [CounterController::class, 'show']);
     Route::get('queues', [QueueController::class, 'index']);
 });
