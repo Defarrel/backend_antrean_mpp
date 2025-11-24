@@ -91,11 +91,12 @@ class QueueController extends Controller
 
         $queue = QueueModel::find($id);
         if ($queue) {
-            $this->callNext($queue->counter_id);
+            $this->callNextInternal($queue->counter_id);
         }
 
         return $response;
     }
+
 
     public function cancel($id)
     {
@@ -170,13 +171,8 @@ class QueueController extends Controller
         }
     }
 
-    public function callNext(Request $request)
+    public function callNext($counterId)
     {
-        $counterId = $request->input('counter_id');
-        if (!$counterId) {
-            return response()->json(['message' => 'counter_id is required'], 400);
-        }
-
         $nextQueue = QueueModel::where('counter_id', $counterId)
             ->where('status', 'waiting')
             ->whereDate('created_at', now()->toDateString())
@@ -200,6 +196,7 @@ class QueueController extends Controller
             'data' => $nextQueue,
         ], 200);
     }
+
     public function waitingList(Request $request)
     {
         $counterId = $request->query('counter_id');

@@ -43,7 +43,7 @@ Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
     Route::patch('queues/{id}/serve', [QueueController::class, 'serve']);
     Route::patch('queues/{id}/done', [QueueController::class, 'done']);
     Route::patch('queues/{id}/cancel', [QueueController::class, 'cancel']);
-    Route::post('queues/call-next', [QueueController::class, 'callNext']);
+    Route::post('queues/{counterId}/call-next', [QueueController::class, 'callNext']);
 });
 
 // guest routes
