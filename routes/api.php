@@ -25,7 +25,7 @@ Route::middleware('auth:api')->controller(AuthController::class)->prefix('auth')
 Route::middleware(['auth:api', 'role:admin|customer_service'])
     ->group(function () {
 
-        // UPDATE counter
+        // Counter
         Route::get('counters', [CounterController::class, 'index']);
         Route::put('counters/{id}', [CounterController::class, 'update']);
 
