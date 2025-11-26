@@ -21,26 +21,6 @@ Route::middleware('auth:api')->controller(AuthController::class)->prefix('auth')
     Route::post('logout', 'logout');
 });
 
-// Mix: ADMIN + CUSTOMER SERVICE
-Route::middleware(['auth:api', 'role:admin|customer_service'])
-    ->group(function () {
-
-        // Counter
-        Route::get('counters', [CounterController::class, 'index']);
-        Route::put('counters/{id}', [CounterController::class, 'update']);
-
-        // CREATE queue
-        Route::post('queues', [QueueController::class, 'store']);
-
-        // Counter details
-        Route::get('counters/{id}', [CounterController::class, 'show']);
-        Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
-        Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
-        Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
-    });
-
-
-
 // ADMIN
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
@@ -64,6 +44,26 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::put('counter-details/{id}', [CounterDetailController::class, 'update']);
     Route::delete('counter-details/{id}', [CounterDetailController::class, 'destroy']);
 });
+
+// Mix: ADMIN + CUSTOMER SERVICE
+Route::middleware(['auth:api', 'role:admin|customer_service'])
+    ->group(function () {
+
+        // Counter
+        Route::get('counters', [CounterController::class, 'index']);
+        Route::put('counters/{id}', [CounterController::class, 'update']);
+
+        // CREATE queue
+        Route::post('queues', [QueueController::class, 'store']);
+
+        // Counter details
+        Route::get('counters/{id}', [CounterController::class, 'show']);
+        Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
+        Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
+        Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
+    });
+
+
 
 // CS
 Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
