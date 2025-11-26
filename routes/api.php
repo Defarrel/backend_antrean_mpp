@@ -30,6 +30,12 @@ Route::middleware(['auth:api', 'role:admin|customer_service'])
 
         // CREATE queue
         Route::post('queues', [QueueController::class, 'store']);
+
+        // Counter details
+        Route::get('counters/{id}', [CounterController::class, 'show']);
+        Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
+        Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
+        Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
     });
 
 // Mix: ADMIN + CUSTOMER SERVICE
@@ -51,12 +57,6 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::post('counters', [CounterController::class, 'store']);
     Route::delete('counters/{id}', [CounterController::class, 'destroy']);
 
-    // Counter details
-    Route::get('counters/{id}', [CounterController::class, 'show']);
-    Route::get('counters/{id}/logs', [QueueLogController::class, 'indexByCounter']);
-    Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
-    Route::get('counters/statistics', [CounterStatisticController::class, 'index']);
-
     // Queue admin CRUD 
     Route::get('queues', [QueueController::class, 'index']);
     Route::get('queues/{id}', [QueueController::class, 'index']);
@@ -75,9 +75,9 @@ Route::middleware(['auth:api', 'role:customer_service'])->group(function () {
     Route::get('counters', [CounterController::class, 'index']);
     Route::put('counters/{id}', [CounterController::class, 'update']);
 
-    Route::patch('queues/{id}/call',   [QueueController::class, 'call']);
-    Route::patch('queues/{id}/serve',  [QueueController::class, 'serve']);
-    Route::patch('queues/{id}/done',   [QueueController::class, 'done']);
+    Route::patch('queues/{id}/call', [QueueController::class, 'call']);
+    Route::patch('queues/{id}/serve', [QueueController::class, 'serve']);
+    Route::patch('queues/{id}/done', [QueueController::class, 'done']);
     Route::patch('queues/{id}/cancel', [QueueController::class, 'cancel']);
 
     Route::post('queues/{counterId}/call-next', [QueueController::class, 'callNext']);
