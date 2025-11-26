@@ -26,6 +26,7 @@ Route::middleware(['auth:api', 'role:admin|customer_service'])
     ->group(function () {
 
         // UPDATE counter
+        Route::get('counters', [CounterController::class, 'index']);
         Route::put('counters/{id}', [CounterController::class, 'update']);
 
         // CREATE queue
@@ -38,11 +39,6 @@ Route::middleware(['auth:api', 'role:admin|customer_service'])
         Route::get('counters/{id}/statistics', [CounterStatisticController::class, 'show']);
     });
 
-// Mix: ADMIN + CUSTOMER SERVICE
-Route::middleware(['auth:api', 'role:admin|customer_service'])
-    ->group(function () {
-        Route::get('counters', [CounterController::class, 'index']);
-    });
 
 
 // ADMIN
