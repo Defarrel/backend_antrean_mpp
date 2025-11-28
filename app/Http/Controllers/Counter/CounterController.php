@@ -5,12 +5,16 @@ namespace App\Http\Controllers\Counter;
 use App\Http\Controllers\Controller;
 use App\Models\Counter;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class CounterController extends Controller
 {
     public function index()
     {
-        $counters = Counter::orderBy('id', 'desc')->get();
+
+        $counters = Cache::remember('counters_list', 10, function () {
+            return Counter::orderBy('id', 'desc')->get();
+        });
 
         return response()->json([
             'message' => 'List of counters retrieved successfully.',
@@ -31,6 +35,8 @@ class CounterController extends Controller
 
         $counter = Counter::create($validated);
 
+        Cache::forget('counters_list');
+
         return response()->json([
             'message' => 'Counter created successfully.',
             'data' => $counter
@@ -39,7 +45,11 @@ class CounterController extends Controller
 
     public function show($id)
     {
-        $counter = Counter::find($id);
+        $cacheKey = "counter_detail_{$id}";
+
+        $counter = Cache::remember($cacheKey, 10, function () use ($id) {
+            return Counter::find($id);
+        });
 
         if (!$counter) {
             return response()->json(['message' => 'Counter not found.'], 404);
@@ -69,6 +79,9 @@ class CounterController extends Controller
 
         $counter->update($validated);
 
+        Cache::forget('counters_list');
+        Cache::forget("counter_detail_{$id}");
+
         return response()->json([
             'message' => 'Counter updated successfully.',
             'data' => $counter
@@ -85,12 +98,17 @@ class CounterController extends Controller
 
         $counter->delete();
 
+        Cache::forget('counters_list');
+        Cache::forget("counter_detail_{$id}");
+
         return response()->json(['message' => 'Counter deleted successfully.'], 200);
     }
 
     public function trashed()
     {
-        $counters = Counter::onlyTrashed()->orderBy('id', 'desc')->get();
+        $counters = Cache::remember('counters_trashed', 10, function () {
+            return Counter::onlyTrashed()->orderBy('id', 'desc')->get();
+        });
 
         return response()->json([
             'message' => 'List of soft-deleted counters retrieved successfully.',
@@ -108,6 +126,10 @@ class CounterController extends Controller
 
         $counter->restore();
 
+        Cache::forget('counters_list');
+        Cache::forget("counter_detail_{$id}");
+        Cache::forget('counters_trashed');
+
         return response()->json([
             'message' => 'Counter restored successfully.',
             'data' => $counter
@@ -124,9 +146,10 @@ class CounterController extends Controller
 
         $counter->forceDelete();
 
-        return response()->json([
-            'message' => 'Counter permanently deleted successfully.'
-        ], 200);
-    }
+        Cache::forget('counters_list');
+        Cache::forget("counter_detail_{$id}");
+        Cache::forget('counters_trashed');
 
+        return response()->json(['message' => 'Counter permanently deleted successfully.'], 200);
+    }
 }
