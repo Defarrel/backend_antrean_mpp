@@ -7,55 +7,70 @@ use App\Models\QueueLog;
 use App\Models\Counter;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Cache;
 
 class QueueLogController extends Controller
 {
     public function indexByCounter($counterId, Request $request)
     {
-        $counter = Counter::find($counterId);
-        if (!$counter) {
+        $key = "queue_logs_{$counterId}";
+
+        $result = Cache::remember($key, 30, function () use ($counterId) {
+
+            $counter = Counter::find($counterId);
+            if (!$counter) {
+                return null;
+            }
+
+            $logs = QueueLog::with('queue')
+                ->where('counter_id', $counterId)
+                ->orderBy('queue_id')
+                ->orderBy('status_time', 'asc')
+                ->get();
+
+            $processed = [];
+            $previousTimeByQueue = [];
+
+            foreach ($logs as $log) {
+                $queueId = $log->queue_id;
+                $currentTime = Carbon::parse($log->status_time);
+
+                $duration = '-';
+                if (isset($previousTimeByQueue[$queueId])) {
+                    $previousTime = Carbon::parse($previousTimeByQueue[$queueId]);
+                    $diffInSeconds = $previousTime->diffInSeconds($currentTime);
+                    $duration = $this->formatDuration($diffInSeconds);
+                }
+
+                $previousTimeByQueue[$queueId] = $currentTime;
+
+                $processed[] = [
+                    'queue_number' => $log->queue->queue_number ?? '-',
+                    'status'       => ucfirst($log->status),
+                    'status_time'  => $currentTime->format('H:i:s'),
+                    'duration'     => $duration,
+                ];
+            }
+
+            return [
+                'counter_id'   => $counter->id,
+                'counter_name' => $counter->name,
+                'data'         => $processed,
+            ];
+        });
+
+        if (!$result) {
             return response()->json([
-                'message' => 'Counter not found.',
+                'message' => 'Counter not found.'
             ], 404);
         }
 
-        $logs = QueueLog::with('queue')
-            ->where('counter_id', $counterId)
-            ->orderBy('queue_id')
-            ->orderBy('status_time', 'asc')
-            ->get();
-
-        $processed = [];
-        $previousTimeByQueue = [];
-
-        foreach ($logs as $log) {
-            $queueId = $log->queue_id;
-            $currentTime = Carbon::parse($log->status_time);
-            $duration = '-';
-
-            if (isset($previousTimeByQueue[$queueId])) {
-                $previousTime = Carbon::parse($previousTimeByQueue[$queueId]);
-                $diffInSeconds = $previousTime->diffInSeconds($currentTime);
-                $duration = $this->formatDuration($diffInSeconds);
-            }
-
-            $previousTimeByQueue[$queueId] = $currentTime;
-
-            $processed[] = [
-                'queue_number' => $log->queue->queue_number ?? '-',
-                'status' => ucfirst($log->status),
-                'status_time' => $currentTime->format('H:i:s'),
-                'duration' => $duration,
-            ];
-        }
-        
-
         return response()->json([
             'message' => 'Queue logs for counter retrieved successfully.',
-            'counter_id' => $counter->id,
-            'counter_name' => $counter->name,
-            'data' => $processed,
-        ], 200);
+            'counter_id' => $result['counter_id'],
+            'counter_name' => $result['counter_name'],
+            'data' => $result['data'],
+        ]);
     }
 
     private function formatDuration($seconds)
