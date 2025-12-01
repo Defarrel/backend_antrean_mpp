@@ -15,10 +15,11 @@ class QueueController extends Controller
     private function clearCache()
     {
         Cache::forget('queues_all');
-        Cache::forget('queues_waiting');
+        Cache::forget('waiting_all');
+
         foreach (Counter::pluck('id') as $id) {
             Cache::forget("queues_all_{$id}");
-            Cache::forget("queues_waiting_{$id}");
+            Cache::forget("waiting_{$id}");
         }
     }
 
@@ -27,15 +28,17 @@ class QueueController extends Controller
         $counterId = $request->query('counter_id');
         $date = $request->query('date', now()->toDateString());
 
-        $key = "queues_all_" . ($counterId ?: 'all') . "_" . $date;
+        $key = "queues_all_" . ($counterId ?: 'all');
 
         $queues = Cache::remember($key, 10, function () use ($counterId, $date) {
-            $query = QueueModel::with('counter')
-                ->whereDate('created_at', $date)
-                ->orderByDesc('id');
+            $query = QueueModel::with('counter')->orderBy('id', 'desc');
 
             if ($counterId) {
                 $query->where('counter_id', $counterId);
+            }
+
+            if ($date) {
+                $query->whereDate('created_at', $date);
             }
 
             return $query->get();
@@ -65,9 +68,12 @@ class QueueController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        $nextNumber = $lastQueue
-            ? ((int) explode('-', $lastQueue->queue_number)[2]) + 1
-            : 1;
+        $nextNumber = 1;
+        if ($lastQueue) {
+            $parts = explode('-', $lastQueue->queue_number);
+            $lastNumber = is_numeric(end($parts)) ? (int) end($parts) : 0;
+            $nextNumber = $lastNumber + 1;
+        }
 
         $today = now()->format('Ymd');
         $queueNumber = sprintf('%s-%s-%03d', $code, $today, $nextNumber);
@@ -194,9 +200,28 @@ class QueueController extends Controller
 
     public function callNext($counterId)
     {
-        $response = $this->callNextInternal($counterId);
-        $this->clearCache();
-        return $response ?? response()->json(['message' => 'No waiting queue found.'], 404);
+        $nextQueue = QueueModel::where('counter_id', $counterId)
+            ->where('status', 'waiting')
+            ->whereDate('created_at', now()->toDateString())
+            ->orderBy('id')
+            ->first();
+
+        if (!$nextQueue) {
+            return response()->json(['message' => 'No waiting queue found.'], 404);
+        }
+
+        $nextQueue->update([
+            'status' => 'called',
+            'called_at' => now(),
+        ]);
+
+        $this->logQueueStatus($nextQueue, 'called');
+        event(new QueueUpdated($nextQueue));
+
+        return response()->json([
+            'message' => 'Next queue called successfully.',
+            'data' => $nextQueue,
+        ], 200);
     }
 
     public function waitingList(Request $request)
@@ -204,19 +229,19 @@ class QueueController extends Controller
         $counterId = $request->query('counter_id');
         $date = now()->toDateString();
 
-        $key = "queues_waiting_" . ($counterId ?: 'all') . "_" . $date;
+        $key = "waiting_" . ($counterId ?: 'all');
 
         $waiting = Cache::remember($key, 10, function () use ($counterId, $date) {
-            $q = QueueModel::with('counter')
+            $query = QueueModel::with('counter')
                 ->where('status', 'waiting')
                 ->whereDate('created_at', $date)
                 ->orderBy('id');
 
             if ($counterId) {
-                $q->where('counter_id', $counterId);
+                $query->where('counter_id', $counterId);
             }
 
-            return $q->get();
+            return $query->get();
         });
 
         return response()->json([
