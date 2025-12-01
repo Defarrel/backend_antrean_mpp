@@ -12,7 +12,7 @@ class CounterController extends Controller
     public function index()
     {
 
-        $counters = Cache::remember('counters_list', 10, function () {
+        $counters = Cache::remember('counters_list', 1, function () {
             return Counter::orderBy('id', 'desc')->get();
         });
 
@@ -47,7 +47,7 @@ class CounterController extends Controller
     {
         $cacheKey = "counter_detail_{$id}";
 
-        $counter = Cache::remember($cacheKey, 10, function () use ($id) {
+        $counter = Cache::remember($cacheKey, 1, function () use ($id) {
             return Counter::find($id);
         });
 
@@ -106,7 +106,7 @@ class CounterController extends Controller
 
     public function trashed()
     {
-        $counters = Cache::remember('counters_trashed', 10, function () {
+        $counters = Cache::remember('counters_trashed', 1, function () {
             return Counter::onlyTrashed()->orderBy('id', 'desc')->get();
         });
 

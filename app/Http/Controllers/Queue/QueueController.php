@@ -30,7 +30,7 @@ class QueueController extends Controller
 
         $key = "queues_all_" . ($counterId ?: 'all');
 
-        $queues = Cache::remember($key, 10, function () use ($counterId, $date) {
+        $queues = Cache::remember($key, 1, function () use ($counterId, $date) {
             $query = QueueModel::with('counter')->orderBy('id', 'desc');
 
             if ($counterId) {
@@ -231,7 +231,7 @@ class QueueController extends Controller
 
         $key = "waiting_" . ($counterId ?: 'all');
 
-        $waiting = Cache::remember($key, 10, function () use ($counterId, $date) {
+        $waiting = Cache::remember($key, 1, function () use ($counterId, $date) {
             $query = QueueModel::with('counter')
                 ->where('status', 'waiting')
                 ->whereDate('created_at', $date)

@@ -16,7 +16,7 @@ class CounterStatisticController extends Controller
         $date = $request->query('date');
         $cacheKey = 'stats_all_' . ($date ?: 'all');
 
-        $stats = Cache::remember($cacheKey, 60, function () use ($date) {
+        $stats = Cache::remember($cacheKey, 3, function () use ($date) {
 
             $query = Queue::select(
                 'counter_id',
@@ -66,7 +66,7 @@ class CounterStatisticController extends Controller
         $date = $request->query('date');
         $cacheKey = "stat_counter_{$id}_" . ($date ?: 'all');
 
-        $stat = Cache::remember($cacheKey, 60, function () use ($id, $date) {
+        $stat = Cache::remember($cacheKey, 3, function () use ($id, $date) {
 
             $counter = Counter::find($id);
             if (!$counter) {

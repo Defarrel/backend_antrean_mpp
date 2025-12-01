@@ -15,7 +15,7 @@ class QueueLogController extends Controller
     {
         $key = "queue_logs_{$counterId}";
 
-        $result = Cache::remember($key, 30, function () use ($counterId) {
+        $result = Cache::remember($key, 1, function () use ($counterId) {
 
             $counter = Counter::find($counterId);
             if (!$counter) {
