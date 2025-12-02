@@ -2,10 +2,7 @@
 
 use Illuminate\Support\Facades\Broadcast;
 
-Broadcast::channel('queue', function () {
-    return true;
-});
-
-Broadcast::channel('counter', function () {
+// Izinkan semua orang mendengarkan channel ini
+Broadcast::channel('queue-channel', function () {
     return true;
 });

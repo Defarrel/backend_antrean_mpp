@@ -2,54 +2,37 @@
 
 namespace App\Events;
 
-use App\Models\Queue;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow; 
+use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Support\Facades\Log;
 
 class QueueUpdated implements ShouldBroadcastNow
 {
-    use InteractsWithSockets, SerializesModels;
+    use Dispatchable, InteractsWithSockets, SerializesModels;
 
-    public array $payload;
+    public $queue;
 
+    /**
+     * Create a new event instance.
+     */
     public function __construct($queue)
     {
-        if ($queue instanceof Queue) {
-            $this->payload = [
-                'id' => $queue->id,
-                'queue_number' => $queue->queue_number,
-                'counter_id' => $queue->counter_id,
-                'status' => $queue->status,
-                'created_at' => $queue->created_at,
-                'updated_at' => $queue->updated_at,
-            ];
-        } elseif (is_object($queue) && isset($queue->deleted_id)) {
-            $this->payload = [
-                'deleted_id' => $queue->deleted_id,
-            ];
-        } else {
-            $this->payload = (array) $queue;
-        }
+        // Data antrean yang baru dibuat/diupdate dikirim ke socket
+        $this->queue = $queue;
     }
 
-    public function broadcastOn()
+    public function broadcastOn(): array
     {
-        return new Channel('queues');
+        // Pastikan nama ini sama dengan yang didengarkan di frontend (useWebSocket)
+        return [
+            new Channel('queue-channel'),
+        ];
     }
 
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'QueueUpdated';
-    }
-
-    public function broadcastWith(): array
-    {
-        return [
-            'event' => 'queue_updated',
-            'queue' => $this->payload
-        ];
     }
 }

@@ -54,7 +54,7 @@ class QueueController extends Controller
         ], 200);
     }
 
-    public function store(Request $request)
+public function store(Request $request)
     {
         $validated = $request->validate([
             'counter_id' => 'required|exists:counters,id',
@@ -63,6 +63,7 @@ class QueueController extends Controller
         $counter = Counter::findOrFail($validated['counter_id']);
         $code = strtoupper($counter->counter_code);
 
+        // ... (Logika generate nomor antrean tetap sama) ...
         $lastQueue = QueueModel::where('counter_id', $counter->id)
             ->whereDate('created_at', now()->toDateString())
             ->orderByDesc('id')
@@ -87,6 +88,8 @@ class QueueController extends Controller
         $this->logQueueStatus($queue, 'waiting');
 
         $this->clearCache();
+
+        event(new QueueUpdated($queue)); 
 
         return response()->json([
             'message' => 'Queue created successfully.',
@@ -173,24 +176,6 @@ class QueueController extends Controller
         ], 200);
     }
 
-    private function callNextInternal($counterId)
-    {
-        $nextQueue = QueueModel::where('counter_id', $counterId)
-            ->where('status', 'waiting')
-            ->whereDate('created_at', now()->toDateString())
-            ->orderBy('id')
-            ->first();
-
-        if ($nextQueue) {
-            $nextQueue->update([
-                'status' => 'called',
-                'called_at' => now(),
-            ]);
-
-            $this->logQueueStatus($nextQueue, 'called');
-            event(new QueueUpdated($nextQueue));
-        }
-    }
 
     public function callNext($counterId)
     {
