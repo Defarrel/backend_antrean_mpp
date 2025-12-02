@@ -111,12 +111,6 @@ class QueueController extends Controller
     public function done($id)
     {
         $response = $this->updateQueueStatus($id, 'done', 'done_at');
-
-        $queue = QueueModel::find($id);
-        if ($queue) {
-            $this->callNextInternal($queue->counter_id);
-        }
-
         $this->clearCache();
 
         return $response;
