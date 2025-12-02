@@ -5,31 +5,41 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class UserManagementController extends Controller
 {
+    private function clearCache()
+    {
+        Cache::tags(['users'])->flush();
+    }
+
     public function index(Request $request)
     {
-        $query = User::with('role');
+        $key = 'users_index_' . md5(json_encode($request->all()));
 
-        if ($request->archived == 1) {
-            $query->onlyTrashed();
-        }
+        return Cache::tags(['users'])->remember($key, 3600, function () use ($request) {
+            $query = User::with('role');
 
-        if ($request->search) {
-            $search = $request->search;
+            if ($request->archived == 1) {
+                $query->onlyTrashed();
+            }
 
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'ILIKE', "%$search%")
-                    ->orWhere('email', 'ILIKE', "%$search%");
-            });
-        }
+            if ($request->search) {
+                $search = $request->search;
 
-        if ($request->sort) {
-            $query->orderBy($request->sort, $request->order ?? 'asc');
-        }
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'ILIKE', "%$search%")
+                        ->orWhere('email', 'ILIKE', "%$search%");
+                });
+            }
 
-        return $query->paginate(20);
+            if ($request->sort) {
+                $query->orderBy($request->sort, $request->order ?? 'asc');
+            }
+
+            return $query->paginate(20);
+        });
     }
 
     public function store(Request $request)
@@ -43,7 +53,11 @@ class UserManagementController extends Controller
 
         $data['password'] = bcrypt($data['password']);
 
-        return User::create($data);
+        $user = User::create($data);
+
+        $this->clearCache();
+
+        return $user;
     }
 
     public function updateRole(Request $request, $id)
@@ -56,6 +70,8 @@ class UserManagementController extends Controller
         $user->role_id = $data['role_id'];
         $user->save();
 
+        $this->clearCache();
+
         return response()->json([
             "message" => "Role updated",
             "user" => $user->load('role'),
@@ -67,6 +83,8 @@ class UserManagementController extends Controller
         $user = User::findOrFail($id);
         $user->delete();
 
+        $this->clearCache();
+
         return response()->json(['message' => 'User archived']);
     }
 
@@ -74,6 +92,8 @@ class UserManagementController extends Controller
     {
         $user = User::onlyTrashed()->findOrFail($id);
         $user->restore();
+
+        $this->clearCache();
 
         return $user->load('role');
     }

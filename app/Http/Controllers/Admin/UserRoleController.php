@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
 
 class UserRoleController extends Controller
 {
@@ -15,6 +16,8 @@ class UserRoleController extends Controller
         $user = User::findOrFail($id);
         $user->role_id = $request->role_id;
         $user->save();
+
+        Cache::tags(['users'])->flush();
 
         return $user->load('role');
     }
