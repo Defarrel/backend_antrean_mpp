@@ -58,12 +58,6 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     // Queue admin management
     Route::get('queues', [QueueController::class, 'index']);
     Route::delete('queues/{id}', [QueueController::class, 'destroy']);
-
-    // Counter details CRUD
-    Route::get('counter-details', [CounterDetailController::class, 'index']);
-    Route::post('counter-details', [CounterDetailController::class, 'store']);
-    Route::put('counter-details/{id}', [CounterDetailController::class, 'update']);
-    Route::delete('counter-details/{id}', [CounterDetailController::class, 'destroy']);
 });
 
 
