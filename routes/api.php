@@ -1,5 +1,4 @@
 <?php
-
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\Counter\CounterController;
@@ -7,6 +6,10 @@ use App\Http\Controllers\Counter\CounterDetailController;
 use App\Http\Controllers\Counter\CounterStatisticController;
 use App\Http\Controllers\Queue\QueueController;
 use App\Http\Controllers\Queue\QueueLogController;
+use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserManagementController;
+use App\Http\Controllers\Admin\UserRoleController;
 
 
 // Auth Public
@@ -27,6 +30,22 @@ Route::middleware('auth:api')->prefix('auth')->controller(AuthController::class)
 // ADMIN
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
+    // --- USER MANAGEMENT ---
+    Route::post('users/restore/{id}', [UserManagementController::class, 'restore']);
+    Route::put('users/{id}/role', [UserManagementController::class, 'updateRole']); // Menggunakan UserManagementController
+    Route::post('users/{id}/assign-role', [UserRoleController::class, 'assign']);   // Menggunakan UserRoleController (opsional/alternatif)
+    Route::apiResource('users', UserManagementController::class)->except(['update', 'show']); // Index, Store, Destroy
+
+    // --- ROLE MANAGEMENT ---
+    Route::post('roles/restore/{id}', [RoleController::class, 'restore']);
+    Route::apiResource('roles', RoleController::class);
+
+    // --- PERMISSION MANAGEMENT ---
+    Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'destroy']);
+
+
+    // --- COUNTER & QUEUE ADMIN ---
+    
     // Counter soft delete & force delete
     Route::get('counters/trashed', [CounterController::class, 'trashed']);
     Route::post('counters/restore/{id}', [CounterController::class, 'restore']);
