@@ -31,14 +31,18 @@ Route::middleware('auth:api')->prefix('auth')->controller(AuthController::class)
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
     // --- USER MANAGEMENT ---
+    Route::get('users/trashed', [UserManagementController::class, 'trashed']);
     Route::post('users/restore/{id}', [UserManagementController::class, 'restore']);
-    Route::put('users/{id}/role', [UserManagementController::class, 'updateRole']); // Menggunakan UserManagementController
-    Route::post('users/{id}/assign-role', [UserRoleController::class, 'assign']);   // Menggunakan UserRoleController (opsional/alternatif)
-    Route::apiResource('users', UserManagementController::class)->except(['update', 'show']); // Index, Store, Destroy
+    Route::delete('users/force/{id}', [UserManagementController::class, 'forceDelete']);
+    Route::put('users/{id}/role', [UserManagementController::class, 'updateRole']);
+    Route::apiResource('users', UserManagementController::class)->except(['update', 'show']); 
 
     // --- ROLE MANAGEMENT ---
-    Route::post('roles/restore/{id}', [RoleController::class, 'restore']);
+    Route::get('roles/trashed', [RoleController::class, 'trashed']);
     Route::apiResource('roles', RoleController::class);
+    Route::post('roles/restore/{id}', [RoleController::class, 'restore']);
+    Route::delete('roles/force/{id}', [RoleController::class, 'forceDelete']);
+
 
     // --- PERMISSION MANAGEMENT ---
     Route::apiResource('permissions', PermissionController::class)->only(['index', 'store', 'destroy']);

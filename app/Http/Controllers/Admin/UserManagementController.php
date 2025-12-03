@@ -18,7 +18,7 @@ class UserManagementController extends Controller
     {
         $key = 'users_index_' . md5(json_encode($request->all()));
 
-        return Cache::tags(['users'])->remember($key, 3600, function () use ($request) {
+        return Cache::tags(['users'])->remember($key, 5, function () use ($request) {
             $query = User::with('role');
 
             if ($request->archived == 1) {
@@ -27,7 +27,6 @@ class UserManagementController extends Controller
 
             if ($request->search) {
                 $search = $request->search;
-
                 $query->where(function ($q) use ($search) {
                     $q->where('name', 'ILIKE', "%$search%")
                         ->orWhere('email', 'ILIKE', "%$search%");
@@ -54,7 +53,6 @@ class UserManagementController extends Controller
         $data['password'] = bcrypt($data['password']);
 
         $user = User::create($data);
-
         $this->clearCache();
 
         return $user;
@@ -97,4 +95,25 @@ class UserManagementController extends Controller
 
         return $user->load('role');
     }
+
+    public function forceDelete($id)
+    {
+        $user = User::onlyTrashed()->findOrFail($id);
+        $user->forceDelete();
+
+        $this->clearCache();
+
+        return response()->json(['message' => 'User permanently deleted']);
+    }
+
+    public function trashed()
+    {
+        $users = User::onlyTrashed()->with('role')->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'message' => 'List of archived users retrieved successfully.',
+            'data' => $users
+        ]);
+    }
+
 }

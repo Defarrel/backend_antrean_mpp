@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Role;
-use App\Models\Permission;
 use Illuminate\Support\Facades\Cache;
 
 class RoleController extends Controller
@@ -19,11 +18,11 @@ class RoleController extends Controller
     {
         $key = 'roles_index_' . md5(json_encode($request->all()));
 
-        return Cache::tags(['roles'])->remember($key, 3600, function () use ($request) {
+        return Cache::tags(['roles'])->remember($key, 5, function () use ($request) {
             $query = Role::query();
 
             if ($request->archived == 1) {
-                $query = Role::onlyTrashed();
+                $query->onlyTrashed();
             }
 
             if ($request->search) {
@@ -65,7 +64,7 @@ class RoleController extends Controller
     {
         $key = 'role_detail_' . $role->id;
 
-        return Cache::tags(['roles'])->remember($key, 3600, function () use ($role) {
+        return Cache::tags(['roles'])->remember($key, 5, function () use ($role) {
             return $role->load('permissions');
         });
     }
@@ -94,6 +93,7 @@ class RoleController extends Controller
     {
         $role->delete();
         $this->clearCache();
+
         return response()->json(['message' => 'Role archived']);
     }
 
@@ -101,7 +101,29 @@ class RoleController extends Controller
     {
         $role = Role::onlyTrashed()->findOrFail($id);
         $role->restore();
+
         $this->clearCache();
+
         return $role->load('permissions');
+    }
+
+    public function forceDelete($id)
+    {
+        $role = Role::onlyTrashed()->findOrFail($id);
+        $role->forceDelete();
+
+        $this->clearCache();
+
+        return response()->json(['message' => 'Role permanently deleted']);
+    }
+
+    public function trashed()
+    {
+        $roles = Role::onlyTrashed()->with('permissions')->orderBy('id', 'desc')->get();
+
+        return response()->json([
+            'message' => 'List of archived roles retrieved successfully.',
+            'data' => $roles
+        ]);
     }
 }

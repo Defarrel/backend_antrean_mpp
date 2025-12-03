@@ -18,7 +18,7 @@ class PermissionController extends Controller
     {
         $key = 'permissions_index_' . md5(json_encode($request->all()));
 
-        return Cache::tags(['permissions'])->remember($key, 3600, function () {
+        return Cache::tags(['permissions'])->remember($key, 5, function () {
             return Permission::orderBy('name')->paginate(20);
         });
     }
