@@ -115,5 +115,41 @@ class UserManagementController extends Controller
             'data' => $users
         ]);
     }
+    public function assignCounter(Request $request, $id)
+    {
+        $request->validate([
+            'counter_id' => 'required|exists:counters,id',
+        ]);
 
+        $user = User::findOrFail($id);
+
+        // Validasi: hanya CS yang bisa diberi loket
+        if ($user->role_id != 2) {
+            return response()->json([
+                'message' => 'Only customer service users can be assigned to a counter.'
+            ], 422);
+        }
+
+        // Validasi: pastikan loket belum dipakai CS lain
+        $exists = User::where('role_id', 2)
+            ->where('counter_id', $request->counter_id)
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'Counter already assigned to another customer service.'
+            ], 422);
+        }
+
+        $user->counter_id = $request->counter_id;
+        $user->save();
+
+        $this->clearCache();
+
+        return response()->json([
+            'message' => 'Counter assigned successfully.',
+            'user' => $user->load('counter'),
+        ]);
+    }
 }

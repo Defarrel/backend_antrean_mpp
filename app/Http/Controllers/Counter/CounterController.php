@@ -11,6 +11,16 @@ class CounterController extends Controller
 {
     public function index()
     {
+        $user = auth()->user();
+
+        if ($user && $user->role && $user->role->name === 'customer_service') {
+            $counter = Counter::find($user->counter_id);
+
+            return response()->json([
+                'message' => 'List of counters retrieved successfully.',
+                'data' => $counter ? [$counter] : []
+            ], 200);
+        }
 
         $counters = Cache::remember('counters_list', 1, function () {
             return Counter::orderBy('id', 'desc')->get();
@@ -45,6 +55,14 @@ class CounterController extends Controller
 
     public function show($id)
     {
+        $user = auth()->user();
+
+        if ($user && $user->role && $user->role->name === 'customer_service') {
+            if ($user->counter_id != $id) {
+                return response()->json(['message' => 'Forbidden'], 403);
+            }
+        }
+
         $cacheKey = "counter_detail_{$id}";
 
         $counter = Cache::remember($cacheKey, 1, function () use ($id) {

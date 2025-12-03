@@ -23,10 +23,26 @@ class QueueController extends Controller
         }
     }
 
+    private function ensureAuthorizedForCounter($counterId)
+    {
+        $user = auth()->user();
+
+        if ($user && $user->role && $user->role->name === 'customer_service') {
+            if ($user->counter_id != $counterId) {
+                abort(403, 'You are not allowed to access this counter.');
+            }
+        }
+    }
+
     public function index(Request $request)
     {
         $counterId = $request->query('counter_id');
         $date = $request->query('date', now()->toDateString());
+
+        $user = auth()->user();
+        if ($user && $user->role && $user->role->name === 'customer_service') {
+            $counterId = $user->counter_id;
+        }
 
         $key = "queues_all_" . ($counterId ?: 'all');
 
@@ -54,16 +70,17 @@ class QueueController extends Controller
         ], 200);
     }
 
-public function store(Request $request)
+    public function store(Request $request)
     {
         $validated = $request->validate([
             'counter_id' => 'required|exists:counters,id',
         ]);
 
+        $this->ensureAuthorizedForCounter($validated['counter_id']);
+
         $counter = Counter::findOrFail($validated['counter_id']);
         $code = strtoupper($counter->counter_code);
 
-        // ... (Logika generate nomor antrean tetap sama) ...
         $lastQueue = QueueModel::where('counter_id', $counter->id)
             ->whereDate('created_at', now()->toDateString())
             ->orderByDesc('id')
@@ -88,8 +105,7 @@ public function store(Request $request)
         $this->logQueueStatus($queue, 'waiting');
 
         $this->clearCache();
-
-        event(new QueueUpdated($queue)); 
+        event(new QueueUpdated($queue));
 
         return response()->json([
             'message' => 'Queue created successfully.',
@@ -99,21 +115,33 @@ public function store(Request $request)
 
     public function call($id)
     {
+        $queue = QueueModel::find($id);
+        $this->ensureAuthorizedForCounter($queue->counter_id);
+
         $response = $this->updateQueueStatus($id, 'called', 'called_at');
         $this->clearCache();
+
         return $response;
     }
 
     public function serve($id)
     {
+        $queue = QueueModel::find($id);
+        $this->ensureAuthorizedForCounter($queue->counter_id);
+
         $response = $this->updateQueueStatus($id, 'served', 'served_at');
         $this->clearCache();
+
         return $response;
     }
 
     public function done($id)
     {
+        $queue = QueueModel::find($id);
+        $this->ensureAuthorizedForCounter($queue->counter_id);
+
         $response = $this->updateQueueStatus($id, 'done', 'done_at');
+
         $this->clearCache();
 
         return $response;
@@ -121,21 +149,28 @@ public function store(Request $request)
 
     public function cancel($id)
     {
+        $queue = QueueModel::find($id);
+        $this->ensureAuthorizedForCounter($queue->counter_id);
+
         $response = $this->updateQueueStatus($id, 'canceled', 'canceled_at');
         $this->clearCache();
+
         return $response;
     }
 
     public function destroy($id)
     {
         $queue = QueueModel::find($id);
+
         if (!$queue) {
             return response()->json(['message' => 'Queue not found.'], 404);
         }
 
-        $queue->delete();
-        event(new QueueUpdated((object) ['deleted_id' => $id]));
+        $this->ensureAuthorizedForCounter($queue->counter_id);
 
+        $queue->delete();
+
+        event(new QueueUpdated((object) ['deleted_id' => $id]));
         $this->clearCache();
 
         return response()->json(['message' => 'Queue deleted successfully.'], 200);
@@ -158,9 +193,12 @@ public function store(Request $request)
     private function updateQueueStatus($id, $status, $timestampColumn)
     {
         $queue = QueueModel::find($id);
+
         if (!$queue) {
             return response()->json(['message' => 'Queue not found.'], 404);
         }
+
+        $this->ensureAuthorizedForCounter($queue->counter_id);
 
         $queue->update([
             'status' => $status,
@@ -176,9 +214,10 @@ public function store(Request $request)
         ], 200);
     }
 
-
     public function callNext($counterId)
     {
+        $this->ensureAuthorizedForCounter($counterId);
+
         $nextQueue = QueueModel::where('counter_id', $counterId)
             ->where('status', 'waiting')
             ->whereDate('created_at', now()->toDateString())
@@ -207,6 +246,11 @@ public function store(Request $request)
     {
         $counterId = $request->query('counter_id');
         $date = now()->toDateString();
+
+        $user = auth()->user();
+        if ($user && $user->role && $user->role->name === 'customer_service') {
+            $counterId = $user->counter_id;
+        }
 
         $key = "waiting_" . ($counterId ?: 'all');
 

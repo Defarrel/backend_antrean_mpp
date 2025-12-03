@@ -31,6 +31,7 @@ Route::middleware('auth:api')->prefix('auth')->controller(AuthController::class)
 Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
     // --- USER MANAGEMENT ---
+    Route::post('users/{id}/assign-counter', [UserManagementController::class, 'assignCounter']);
     Route::get('users/trashed', [UserManagementController::class, 'trashed']);
     Route::post('users/restore/{id}', [UserManagementController::class, 'restore']);
     Route::delete('users/force/{id}', [UserManagementController::class, 'forceDelete']);
