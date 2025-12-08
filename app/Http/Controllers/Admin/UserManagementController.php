@@ -60,39 +60,50 @@ class UserManagementController extends Controller
 
     public function update(Request $request, $id)
     {
-        $data = $request->validate([
-            'counter_id' => 'required|exists:counters,id',
-        ]);
-
         $user = User::findOrFail($id);
 
-        if ($user->role_id != 2) {
-            return response()->json([
-                'message' => 'Only customer service users can have counters updated.'
-            ], 422);
+        $data = $request->validate([
+            "name" => "sometimes|string|max:255",
+            "email" => "sometimes|email|unique:users,email," . $user->id,
+            "role_id" => "sometimes|exists:roles,id",
+            "counter_id" => "nullable|exists:counters,id"
+        ]);
+
+        if (isset($data['role_id']) && $data['role_id'] == 2) {
+
+            if (!isset($data['counter_id'])) {
+                return response()->json([
+                    'message' => 'Customer service user must have a counter assigned.'
+                ], 422);
+            }
+
+            $exists = User::where('role_id', 2)
+                ->where('counter_id', $data['counter_id'])
+                ->where('id', '!=', $user->id)
+                ->exists();
+
+            if ($exists) {
+                return response()->json([
+                    'message' => 'Selected counter is already assigned to another customer service.'
+                ], 422);
+            }
+
         }
 
-        $exists = User::where('role_id', 2)
-            ->where('counter_id', $data['counter_id'])
-            ->where('id', '!=', $user->id)
-            ->exists();
-
-        if ($exists) {
-            return response()->json([
-                'message' => 'Counter already assigned to another customer service.'
-            ], 422);
+        if (isset($data['role_id']) && $data['role_id'] != 2) {
+            $data['counter_id'] = null;
         }
 
-        $user->counter_id = $data['counter_id'];
-        $user->save();
+        $user->update($data);
 
         $this->clearCache();
 
         return response()->json([
-            'message' => 'Counter updated successfully.',
-            'data' => $user->load('counter'),
+            "message" => "User updated successfully",
+            "data" => $user->load(['role', 'counter']),
         ]);
     }
+
 
     public function store(Request $request)
     {
