@@ -41,6 +41,59 @@ class UserManagementController extends Controller
         });
     }
 
+    public function show($id)
+    {
+        $key = "user_detail_{$id}";
+
+        $user = Cache::tags(['users'])->remember($key, 5, function () use ($id) {
+            return User::with(['role', 'counter'])
+                ->withTrashed()
+                ->findOrFail($id);
+        });
+
+        return response()->json([
+            'message' => 'User detail retrieved successfully.',
+            'data' => $user
+        ]);
+    }
+
+
+    public function update(Request $request, $id)
+    {
+        $data = $request->validate([
+            'counter_id' => 'required|exists:counters,id',
+        ]);
+
+        $user = User::findOrFail($id);
+
+        if ($user->role_id != 2) {
+            return response()->json([
+                'message' => 'Only customer service users can have counters updated.'
+            ], 422);
+        }
+
+        $exists = User::where('role_id', 2)
+            ->where('counter_id', $data['counter_id'])
+            ->where('id', '!=', $user->id)
+            ->exists();
+
+        if ($exists) {
+            return response()->json([
+                'message' => 'Counter already assigned to another customer service.'
+            ], 422);
+        }
+
+        $user->counter_id = $data['counter_id'];
+        $user->save();
+
+        $this->clearCache();
+
+        return response()->json([
+            'message' => 'Counter updated successfully.',
+            'data' => $user->load('counter'),
+        ]);
+    }
+
     public function store(Request $request)
     {
         $data = $request->validate([

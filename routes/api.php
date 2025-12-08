@@ -36,7 +36,7 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
     Route::post('users/restore/{id}', [UserManagementController::class, 'restore']);
     Route::delete('users/force/{id}', [UserManagementController::class, 'forceDelete']);
     Route::put('users/{id}/role', [UserManagementController::class, 'updateRole']);
-    Route::apiResource('users', UserManagementController::class)->except(['update', 'show']); 
+    Route::apiResource('users', UserManagementController::class); 
 
     // --- ROLE MANAGEMENT ---
     Route::get('roles/trashed', [RoleController::class, 'trashed']);
