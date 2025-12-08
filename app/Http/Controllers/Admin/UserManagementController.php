@@ -216,4 +216,29 @@ class UserManagementController extends Controller
             'user' => $user->load('counter'),
         ]);
     }
+
+// UserManagementController.php
+    public function unassignCounter($id)
+    {
+        $user = User::findOrFail($id);
+
+        // Validasi: hanya CS yang bisa dilepaskan loket
+        if ($user->role_id != 2) {
+            return response()->json([
+                'message' => 'Only customer service users can have counters unassigned.'
+            ], 422);
+        }
+
+        $user->counter_id = null;
+        $user->save();
+
+        $this->clearCache();
+
+        return response()->json([
+            'message' => 'Counter unassigned successfully.',
+            'data' => $user->load('counter'),
+        ]);
+    }
+
+
 }

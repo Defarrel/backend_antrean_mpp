@@ -32,11 +32,12 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
     // --- USER MANAGEMENT ---
     Route::post('users/{id}/assign-counter', [UserManagementController::class, 'assignCounter']);
+    Route::post('users/{id}/unassign-counter', [UserManagementController::class, 'unassignCounter']);
     Route::get('users/trashed', [UserManagementController::class, 'trashed']);
     Route::post('users/restore/{id}', [UserManagementController::class, 'restore']);
     Route::delete('users/force/{id}', [UserManagementController::class, 'forceDelete']);
     Route::put('users/{id}/role', [UserManagementController::class, 'updateRole']);
-    Route::apiResource('users', UserManagementController::class); 
+    Route::apiResource('users', UserManagementController::class);
 
     // --- ROLE MANAGEMENT ---
     Route::get('roles/trashed', [RoleController::class, 'trashed']);
@@ -50,7 +51,7 @@ Route::middleware(['auth:api', 'role:admin'])->group(function () {
 
 
     // --- COUNTER & QUEUE ADMIN ---
-    
+
     // Counter soft delete & force delete
     Route::get('counters/trashed', [CounterController::class, 'trashed']);
     Route::post('counters/restore/{id}', [CounterController::class, 'restore']);
